@@ -17,7 +17,7 @@ async fn test() {
 
     let mut value = 0;
 
-    loop {
+    for _ in 0..100 {
         tokio::time::delay_for(Duration::from_millis(50)).await;
 
         let next = reader.read().await;
