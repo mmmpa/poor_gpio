@@ -74,20 +74,20 @@ mod tests {
 
         let r = tokio::spawn(async move {
             let v = cli.recv().await.unwrap();
-            assert_eq!(1, v);
+            assert_eq!(GpioReaderEvent::FromTo((0, 1)), v);
             let v = cli.recv().await.unwrap();
-            assert_eq!(0, v);
+            assert_eq!(GpioReaderEvent::FromTo((1, 0)), v);
             let v = cli.recv().await.unwrap();
-            assert_eq!(1, v);
+            assert_eq!(GpioReaderEvent::FromTo((0, 1)), v);
             true
         });
 
         tokio::spawn(async {
-            tokio::time::delay_for(Duration::from_millis(100)).await;
+            tokio::time::delay_for(Duration::from_millis(20)).await;
             test_write_value(44, 1);
-            tokio::time::delay_for(Duration::from_millis(100)).await;
+            tokio::time::delay_for(Duration::from_millis(20)).await;
             test_write_value(44, 0);
-            tokio::time::delay_for(Duration::from_millis(100)).await;
+            tokio::time::delay_for(Duration::from_millis(20)).await;
             test_write_value(44, 1);
         });
 

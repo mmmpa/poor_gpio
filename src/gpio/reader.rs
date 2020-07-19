@@ -3,6 +3,11 @@ use async_trait::async_trait;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::Duration;
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum GpioReaderEvent {
+    FromTo((usize, usize)),
+}
+
 #[async_trait]
 pub trait GpioReader: Gpio {
     async fn read(&self) -> GpioResult<usize> {
@@ -25,11 +30,11 @@ pub trait GpioReader: Gpio {
 }
 #[async_trait]
 pub trait GpioReaderIntoListener: GpioReader {
-    async fn into_listener(self) -> GpioResult<Receiver<usize>> {
+    async fn into_listener(self) -> GpioResult<Receiver<GpioReaderEvent>> {
         self.into_listener_with_interval(10).await
     }
 
-    async fn into_listener_with_interval(self, msec: u64) -> GpioResult<Receiver<usize>> {
+    async fn into_listener_with_interval(self, msec: u64) -> GpioResult<Receiver<GpioReaderEvent>> {
         let interval = Duration::from_millis(msec);
         let pre = self.read().await?;
         let (mut sender, receiver) = tokio::sync::mpsc::channel(100);
@@ -41,7 +46,10 @@ pub trait GpioReaderIntoListener: GpioReader {
 
                 let next = self.read().await.unwrap();
                 if pre != next {
-                    sender.send(next).await.unwrap();
+                    sender
+                        .send(GpioReaderEvent::FromTo((pre, next)))
+                        .await
+                        .unwrap();
                 }
                 pre = next;
             }
