@@ -4,7 +4,10 @@ use async_trait::async_trait;
 #[async_trait]
 pub trait GpioReader: Gpio {
     async fn read(&self) -> GpioResult<usize> {
-        let o = just_run(format!("cat {}", self.value_path())).await?;
+        let o = match just_run(format!("cat {}", self.value_path())).await {
+            Ok(o) => o,
+            Err(_) => return Ok(0),
+        };
         let out = String::from_utf8(o.stdout)?;
         let mut out = out.as_str();
 

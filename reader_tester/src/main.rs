@@ -17,15 +17,17 @@ async fn test() {
 
     let mut value = 0;
 
-    for _ in 0..50 {
+    loop {
         tokio::time::delay_for(Duration::from_millis(50)).await;
 
         let next = reader.read().await;
         if let Ok(n) = next {
             if n != value {
-                value = n;
                 println!("read: {}", value)
             }
+            value = n;
+        } else {
+            println!("read failure: {:?}", next)
         }
     }
 }
