@@ -8,7 +8,7 @@ use tokio::time::Duration;
 
 async fn test() {
     let mut on =  GpioWriterClient::open(2).await.unwrap();
-    let mut off = GpioWriterClient::open(3).unwrap();
+    let mut off = GpioWriterClient::open(3).await.unwrap();
 
     for _ in 0..50 {
         tokio::time::delay_for(Duration::from_millis(50)).await;
