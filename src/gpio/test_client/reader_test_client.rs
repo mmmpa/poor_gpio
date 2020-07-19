@@ -23,6 +23,7 @@ impl GpioReaderOpener for GpioReaderTestClient {
         Self: Sized,
     {
         std::fs::create_dir_all("./tmp").unwrap();
+        let _ = std::fs::remove_file(format!("./tmp/{}", n));
         Ok(Self::new_with_n(n))
     }
 }
@@ -44,7 +45,7 @@ impl GpioReader for GpioReaderTestClient {
 
 impl GpioReaderIntoListener for GpioReaderTestClient {}
 
-pub async fn create_test_reader(n: usize) -> impl GpioReader {
+pub async fn create_test_reader(n: usize) -> impl GpioReader + GpioReaderIntoListener {
     GpioReaderTestClient::open(n).await.unwrap()
 }
 
@@ -55,6 +56,7 @@ pub fn test_write_value(gpio_n: usize, value: usize) {
 #[cfg(test)]
 mod tests {
     use crate::*;
+    use tokio::time::Duration;
 
     #[tokio::test]
     async fn test() {
@@ -64,5 +66,32 @@ mod tests {
 
         test_write_value(42, 1);
         assert_eq!(1, cli.read().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_listener() {
+        let mut cli = create_test_reader(44).await.into_listener().await.unwrap();
+
+        let r = tokio::spawn(async move {
+            let v = cli.recv().await.unwrap();
+            assert_eq!(1, v);
+            let v = cli.recv().await.unwrap();
+            assert_eq!(0, v);
+            let v = cli.recv().await.unwrap();
+            assert_eq!(1, v);
+            true
+        });
+
+        tokio::spawn(async {
+            tokio::time::delay_for(Duration::from_millis(100)).await;
+            test_write_value(44, 1);
+            tokio::time::delay_for(Duration::from_millis(100)).await;
+            test_write_value(44, 0);
+            tokio::time::delay_for(Duration::from_millis(100)).await;
+            test_write_value(44, 1);
+        });
+
+        let ended = r.await.unwrap();
+        assert!(ended);
     }
 }

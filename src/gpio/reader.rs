@@ -25,11 +25,11 @@ pub trait GpioReader: Gpio {
 }
 #[async_trait]
 pub trait GpioReaderIntoListener: GpioReader {
-    async fn into_listener(self, msec: Option<u64>) -> GpioResult<Receiver<usize>> {
-        let msec = match msec {
-            None => 50,
-            Some(n) => n,
-        };
+    async fn into_listener(self) -> GpioResult<Receiver<usize>> {
+        self.into_listener_with_interval(10).await
+    }
+
+    async fn into_listener_with_interval(self, msec: u64) -> GpioResult<Receiver<usize>> {
         let interval = Duration::from_millis(msec);
         let pre = self.read().await?;
         let (mut sender, receiver) = tokio::sync::mpsc::channel(100);
