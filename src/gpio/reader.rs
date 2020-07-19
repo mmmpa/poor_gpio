@@ -1,23 +1,30 @@
 use crate::*;
-use std::process::Command;
+use async_trait::async_trait;
 
+#[async_trait]
 pub trait GpioReader: Gpio {
-    fn open(n: usize) -> GpioResult<Self>
+    async fn read(&self) -> GpioResult<usize> {
+        let o = just_run(format!("cat {}", self.value_path())).await?;
+        let out = String::from_utf8(o.stdout)?;
+        let mut out = out.as_str();
+
+        if out.len() > 0 && &out[out.len() - 1..] == "\n" {
+            out = &out[..out.len() - 1]
+        }
+
+        match out.parse() {
+            Ok(n) => Ok(n),
+            Err(_) => Ok(0),
+        }
+    }
+}
+
+#[async_trait]
+pub trait GpioReaderOpener: Gpio {
+    async fn open(n: usize) -> GpioResult<Self>
     where
         Self: Sized,
     {
-        Self::prepare(n, "in")?;
-
-        Ok(Self::new_with_n(n))
-    }
-
-    fn read(&self) -> GpioResult<usize> {
-        let o = Command::new("sh")
-            .arg("-c")
-            .arg("cat")
-            .arg(self.value_path())
-            .output()?;
-
-        Ok(String::from_utf8(o.stdout)?.parse()?)
+        Self::prepare(n, "in").await
     }
 }

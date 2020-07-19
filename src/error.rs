@@ -1,7 +1,17 @@
+use std::process::Output;
 use tokio::io::Error;
+
 #[derive(Debug)]
 pub enum GpioError {
     SomethingWrong(String),
+    PreparationError(RunCommandError),
+    RunCommandError(RunCommandError),
+}
+
+#[derive(Debug)]
+pub struct RunCommandError {
+    pub command: String,
+    pub output: Output,
 }
 
 impl std::fmt::Display for GpioError {

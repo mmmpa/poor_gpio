@@ -1,5 +1,5 @@
 [package]
-name = "poor_gpio"
+name = "tester"
 version = "0.1.0"
 authors = ["mmmpa <mmmpa.mmmpa@gmail.com>"]
 edition = "2018"
@@ -7,5 +7,5 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.31"
-tokio = { version = "0.2", features = ["process", "sync", "macros", "time", "fs"] }
+tokio = { varsion = "0.2.21", features = ["full"] }
+poor_gpio = { path = "../" }
