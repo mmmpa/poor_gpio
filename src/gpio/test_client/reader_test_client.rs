@@ -31,12 +31,18 @@ impl GpioReaderOpener for GpioReaderTestClient {
 #[async_trait]
 impl GpioReader for GpioReaderTestClient {
     async fn read(&self) -> GpioResult<usize> {
-        let n = match std::fs::read_to_string(format!("./tmp/{}", self.gpio_n())) {
+        let out = match std::fs::read_to_string(format!("./tmp/{}", self.gpio_n())) {
             Ok(n) => n,
-            Err(_) => return Ok(0),
+            Err(e) => return Ok(0),
         };
 
-        match n.parse() {
+        let mut out = out.as_str();
+
+        if out.len() > 0 && &out[out.len() - 1..] == "\n" {
+            out = &out[..out.len() - 1]
+        }
+
+        match out.parse() {
             Ok(n) => Ok(n),
             Err(_) => Ok(0),
         }
