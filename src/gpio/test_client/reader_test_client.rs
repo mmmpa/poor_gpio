@@ -1,7 +1,7 @@
 use crate::*;
 use async_trait::async_trait;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct GpioReaderTestClient {
     config: Config,
 }

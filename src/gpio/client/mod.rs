@@ -1,7 +1,7 @@
 use crate::*;
 use std::process::Command;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct GpioWriterClient {
     config: Config,
 }
@@ -33,7 +33,7 @@ impl Drop for GpioWriterClient {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct GpioReaderClient {
     config: Config,
 }

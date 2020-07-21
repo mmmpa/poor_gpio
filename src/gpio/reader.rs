@@ -60,6 +60,6 @@ pub trait GpioReaderOpener: Gpio {
     where
         Self: Sized,
     {
-        Self::prepare(config, "in").await
+        Self::prepare(config, GpioDirection::In).await
     }
 }

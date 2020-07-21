@@ -16,6 +16,6 @@ pub trait GpioWriterOpener: Gpio {
     where
         Self: Sized,
     {
-        Self::prepare(config, "out").await
+        Self::prepare(config, GpioDirection::Out).await
     }
 }
