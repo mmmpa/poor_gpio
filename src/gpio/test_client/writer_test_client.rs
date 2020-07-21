@@ -20,6 +20,7 @@ impl Gpio for GpioWriterTestClient {
 impl GpioWriter for GpioWriterTestClient {
     async fn write(&self, value: usize) -> GpioResult<()> {
         std::fs::write(format!("./tmp/{}", self.gpio_n()), value.to_string()).unwrap();
+        info!("written: {} -> {}", self.gpio_n(), value);
 
         Ok(())
     }

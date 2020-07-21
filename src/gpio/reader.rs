@@ -16,13 +16,8 @@ pub trait GpioReader: Gpio {
             Err(_) => return Ok(0),
         };
         let out = String::from_utf8(o.stdout)?;
-        let mut out = out.as_str();
 
-        if out.len() > 0 && &out[out.len() - 1..] == "\n" {
-            out = &out[..out.len() - 1]
-        }
-
-        match out.parse() {
+        match chomp(&out).parse() {
             Ok(n) => Ok(n),
             Err(_) => Ok(0),
         }

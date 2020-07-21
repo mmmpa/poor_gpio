@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 async-trait = "0.1.31"
 tokio = { version = "0.2", features = ["process", "sync", "macros", "time", "fs"] }
+log = "0.4.11"

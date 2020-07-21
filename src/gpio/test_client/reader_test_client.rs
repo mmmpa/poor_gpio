@@ -33,16 +33,10 @@ impl GpioReader for GpioReaderTestClient {
     async fn read(&self) -> GpioResult<usize> {
         let out = match std::fs::read_to_string(format!("./tmp/{}", self.gpio_n())) {
             Ok(n) => n,
-            Err(e) => return Ok(0),
+            Err(_) => return Ok(0),
         };
 
-        let mut out = out.as_str();
-
-        if out.len() > 0 && &out[out.len() - 1..] == "\n" {
-            out = &out[..out.len() - 1]
-        }
-
-        match out.parse() {
+        match chomp(&out).parse() {
             Ok(n) => Ok(n),
             Err(_) => Ok(0),
         }
