@@ -14,11 +14,15 @@ impl Gpio for GpioWriterTestClient {
     fn config(&self) -> &Config {
         &self.config
     }
+
+    fn config_mut(&mut self) -> &mut Config {
+        &mut self.config
+    }
 }
 
 #[async_trait]
 impl GpioWriter for GpioWriterTestClient {
-    async fn write(&self, value: usize) -> GpioResult<()> {
+    async fn write(&mut self, value: usize) -> GpioResult<()> {
         std::fs::write(format!("./tmp/{}", self.config().gpio_n), value.to_string()).unwrap();
         info!("written: {} -> {}", self.config().gpio_n, value);
 
@@ -39,7 +43,7 @@ impl GpioWriterOpener for GpioWriterTestClient {
 
 #[async_trait]
 impl GpioReader for GpioWriterTestClient {
-    async fn read(&self) -> GpioResult<usize> {
+    async fn read(&mut self) -> GpioResult<usize> {
         let n = std::fs::read_to_string(format!("./tmp/{}", self.config().gpio_n)).unwrap();
 
         Ok(n.parse().unwrap())
@@ -62,7 +66,7 @@ mod tests {
 
     #[tokio::test]
     async fn test() {
-        let cli = create_test_writer(24).await;
+        let mut cli = create_test_writer(24).await;
 
         cli.write(1).await.unwrap();
         assert_eq!(read_to_string("./tmp/24").unwrap(), "1");

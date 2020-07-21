@@ -1,10 +1,16 @@
 use crate::*;
 use async_trait::async_trait;
+use tokio::prelude::*;
 
 #[async_trait]
 pub trait GpioWriter: Gpio {
-    async fn write(&self, value: usize) -> GpioResult<()> {
-        just_run(format!("echo {} > {}", value, self.value_path())).await?;
+    async fn write(&mut self, value: usize) -> GpioResult<()> {
+        self.config_mut()
+            .file
+            .as_mut()
+            .unwrap()
+            .write(value.to_string().as_bytes())
+            .await?;
 
         Ok(())
     }

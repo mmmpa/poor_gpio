@@ -1,5 +1,6 @@
 use crate::*;
 use async_trait::async_trait;
+use tokio::prelude::*;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::Duration;
 
@@ -10,12 +11,20 @@ pub enum GpioReaderEvent {
 
 #[async_trait]
 pub trait GpioReader: Gpio {
-    async fn read(&self) -> GpioResult<usize> {
-        let o = match just_run(format!("cat {}", self.value_path())).await {
+    async fn read(&mut self) -> GpioResult<usize> {
+        let mut contents = vec![];
+        match self
+            .config_mut()
+            .file
+            .as_mut()
+            .unwrap()
+            .read_to_end(&mut contents)
+            .await
+        {
             Ok(o) => o,
             Err(_) => return Ok(0),
         };
-        let out = String::from_utf8(o.stdout)?;
+        let out = String::from_utf8(contents)?;
 
         match chomp(&out).parse() {
             Ok(n) => Ok(n),
@@ -29,7 +38,10 @@ pub trait GpioReaderIntoListener: GpioReader {
         self.into_listener_with_interval(10).await
     }
 
-    async fn into_listener_with_interval(self, msec: u64) -> GpioResult<Receiver<GpioReaderEvent>> {
+    async fn into_listener_with_interval(
+        mut self,
+        msec: u64,
+    ) -> GpioResult<Receiver<GpioReaderEvent>> {
         let interval = Duration::from_millis(msec);
         let pre = self.read().await?;
         let (mut sender, receiver) = tokio::sync::mpsc::channel(100);

@@ -12,6 +12,7 @@ pub enum GpioDirection {
 pub trait Gpio: Sized + Sync + Send + 'static {
     fn new_with(config: Config) -> Self;
     fn config(&self) -> &Config;
+    fn config_mut(&mut self) -> &mut Config;
     fn n(&self) -> &str {
         self.config().gpio_n_str.as_ref().unwrap()
     }

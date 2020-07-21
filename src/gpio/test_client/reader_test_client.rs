@@ -14,7 +14,12 @@ impl Gpio for GpioReaderTestClient {
     fn config(&self) -> &Config {
         &self.config
     }
+
+    fn config_mut(&mut self) -> &mut Config {
+        &mut self.config
+    }
 }
+
 #[async_trait]
 impl GpioReaderOpener for GpioReaderTestClient {
     async fn open(config: Config) -> GpioResult<Self>
@@ -29,7 +34,7 @@ impl GpioReaderOpener for GpioReaderTestClient {
 
 #[async_trait]
 impl GpioReader for GpioReaderTestClient {
-    async fn read(&self) -> GpioResult<usize> {
+    async fn read(&mut self) -> GpioResult<usize> {
         let out = match std::fs::read_to_string(format!("./tmp/{}", self.config().gpio_n)) {
             Ok(n) => n,
             Err(_) => return Ok(0),
@@ -64,7 +69,7 @@ mod tests {
 
     #[tokio::test]
     async fn test() {
-        let cli = create_test_reader(42).await;
+        let mut cli = create_test_reader(42).await;
 
         assert_eq!(0, cli.read().await.unwrap());
 
