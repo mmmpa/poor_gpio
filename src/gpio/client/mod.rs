@@ -3,16 +3,16 @@ use std::process::Command;
 
 #[derive(Clone, Debug)]
 pub struct GpioWriterClient {
-    n: usize,
+    config: Config,
 }
 
 impl Gpio for GpioWriterClient {
-    fn new_with_n(n: usize) -> Self {
-        Self { n }
+    fn new_with(config: Config) -> Self {
+        Self { config }
     }
 
-    fn gpio_n(&self) -> usize {
-        self.n
+    fn config(&self) -> &Config {
+        &self.config
     }
 }
 
@@ -25,23 +25,26 @@ impl Drop for GpioWriterClient {
         // must sync
         let _ = Command::new("sh")
             .arg("-c")
-            .arg(format!("echo {} > /sys/class/gpio/unexport", self.gpio_n()))
+            .arg(format!(
+                "echo {} > /sys/class/gpio/unexport",
+                self.config.gpio_n
+            ))
             .output();
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct GpioReaderClient {
-    n: usize,
+    config: Config,
 }
 
 impl Gpio for GpioReaderClient {
-    fn new_with_n(n: usize) -> Self {
-        Self { n }
+    fn new_with(config: Config) -> Self {
+        Self { config }
     }
 
-    fn gpio_n(&self) -> usize {
-        self.n
+    fn config(&self) -> &Config {
+        &self.config
     }
 }
 
@@ -54,7 +57,10 @@ impl Drop for GpioReaderClient {
         // must sync
         let _ = Command::new("sh")
             .arg("-c")
-            .arg(format!("echo {} > /sys/class/gpio/unexport", self.gpio_n()))
+            .arg(format!(
+                "echo {} > /sys/class/gpio/unexport",
+                self.config.gpio_n
+            ))
             .output();
     }
 }

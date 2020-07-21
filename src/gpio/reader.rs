@@ -56,10 +56,10 @@ pub trait GpioReaderIntoListener: GpioReader {
 
 #[async_trait]
 pub trait GpioReaderOpener: Gpio {
-    async fn open(n: usize) -> GpioResult<Self>
+    async fn open(config: Config) -> GpioResult<Self>
     where
         Self: Sized,
     {
-        Self::prepare(n, "in").await
+        Self::prepare(config, "in").await
     }
 }

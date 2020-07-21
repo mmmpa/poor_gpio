@@ -12,10 +12,10 @@ pub trait GpioWriter: Gpio {
 
 #[async_trait]
 pub trait GpioWriterOpener: Gpio {
-    async fn open(n: usize) -> GpioResult<Self>
+    async fn open(config: Config) -> GpioResult<Self>
     where
         Self: Sized,
     {
-        Self::prepare(n, "out").await
+        Self::prepare(config, "out").await
     }
 }

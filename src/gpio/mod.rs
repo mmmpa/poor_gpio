@@ -1,11 +1,13 @@
 mod base;
 mod client;
+mod config;
 mod reader;
 mod test_client;
 mod writer;
 
 pub use base::*;
 pub use client::*;
+pub use config::*;
 pub use reader::*;
 pub use test_client::*;
 pub use writer::*;

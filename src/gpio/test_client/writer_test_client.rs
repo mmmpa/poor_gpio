@@ -3,24 +3,24 @@ use async_trait::async_trait;
 
 #[derive(Clone, Debug)]
 pub struct GpioWriterTestClient {
-    n: usize,
+    config: Config,
 }
 
 impl Gpio for GpioWriterTestClient {
-    fn new_with_n(n: usize) -> Self {
-        Self { n }
+    fn new_with(config: Config) -> Self {
+        Self { config }
     }
 
-    fn gpio_n(&self) -> usize {
-        self.n
+    fn config(&self) -> &Config {
+        &self.config
     }
 }
 
 #[async_trait]
 impl GpioWriter for GpioWriterTestClient {
     async fn write(&self, value: usize) -> GpioResult<()> {
-        std::fs::write(format!("./tmp/{}", self.gpio_n()), value.to_string()).unwrap();
-        info!("written: {} -> {}", self.gpio_n(), value);
+        std::fs::write(format!("./tmp/{}", self.config().gpio_n), value.to_string()).unwrap();
+        info!("written: {} -> {}", self.config().gpio_n, value);
 
         Ok(())
     }
@@ -28,26 +28,31 @@ impl GpioWriter for GpioWriterTestClient {
 
 #[async_trait]
 impl GpioWriterOpener for GpioWriterTestClient {
-    async fn open(n: usize) -> GpioResult<Self>
+    async fn open(config: Config) -> GpioResult<Self>
     where
         Self: Sized,
     {
         std::fs::create_dir_all("./tmp").unwrap();
-        Ok(Self::new_with_n(n))
+        Ok(Self::new_with(config))
     }
 }
 
 #[async_trait]
 impl GpioReader for GpioWriterTestClient {
     async fn read(&self) -> GpioResult<usize> {
-        let n = std::fs::read_to_string(format!("./tmp/{}", self.gpio_n())).unwrap();
+        let n = std::fs::read_to_string(format!("./tmp/{}", self.config().gpio_n)).unwrap();
 
         Ok(n.parse().unwrap())
     }
 }
 
-pub async fn create_test_writer(n: usize) -> impl GpioWriter {
-    GpioWriterTestClient::open(n).await.unwrap()
+pub async fn create_test_writer(gpio_n: usize) -> impl GpioWriter {
+    GpioWriterTestClient::open(Config {
+        gpio_n,
+        ..Default::default()
+    })
+    .await
+    .unwrap()
 }
 
 #[cfg(test)]
