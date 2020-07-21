@@ -12,19 +12,13 @@ pub enum GpioReaderEvent {
 #[async_trait]
 pub trait GpioReader: Gpio {
     async fn read(&mut self) -> GpioResult<usize> {
-        let mut contents = vec![];
-        match self
-            .config_mut()
-            .file
-            .as_mut()
-            .unwrap()
-            .read_to_end(&mut contents)
-            .await
-        {
+        let o = match tokio::fs::read(self.value_path()).await {
             Ok(o) => o,
-            Err(_) => return Ok(0),
+            Err(e) => return Ok(0),
         };
-        let out = String::from_utf8(contents)?;
+        let out = String::from_utf8(o)?;
+
+        info!("{}", out);
 
         match chomp(&out).parse() {
             Ok(n) => Ok(n),

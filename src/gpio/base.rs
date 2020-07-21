@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use tokio::fs::File;
 use tokio::io::Error;
 
+#[derive(Debug)]
 pub enum GpioDirection {
     In,
     Out,
@@ -22,16 +23,19 @@ pub trait Gpio: Sized + Sync + Send + 'static {
         Self: Sized,
     {
         use GpioError::*;
+        info!("gpio start preparation");
 
         config.gpio_n_str = Some(config.gpio_n.to_string());
         config.value_path = Some(format!("/sys/class/gpio/gpio{}/value", config.gpio_n));
 
         if config.open {
-            if let Err(e) =
-                tokio::fs::write("/sys/class/gpio/export", config.gpio_n.to_string()).await
-            {
-                if config.err_if_already_opened {
-                    return Err(SomethingWrong(e.to_string()));
+            match tokio::fs::write("/sys/class/gpio/export", config.gpio_n.to_string()).await {
+                Ok(_) => info!("opened {}", config.gpio_n),
+                Err(e) => {
+                    error!("open error");
+                    if config.err_if_already_opened {
+                        return Err(SomethingWrong(e.to_string()));
+                    }
                 }
             }
         }
@@ -41,11 +45,11 @@ pub trait Gpio: Sized + Sync + Send + 'static {
         let mut open_option = tokio::fs::OpenOptions::new();
         let file = match direction {
             GpioDirection::In => {
-                tokio::fs::write(direction_path, "in").await;
+                tokio::fs::write(&direction_path, "in").await.unwrap();
                 open_option.read(true)
             }
             GpioDirection::Out => {
-                tokio::fs::write(direction_path, "out").await;
+                tokio::fs::write(&direction_path, "out").await.unwrap();
                 open_option.read(true).write(true)
             }
         }
@@ -53,10 +57,20 @@ pub trait Gpio: Sized + Sync + Send + 'static {
         .await;
 
         let file = match file {
-            Ok(file) => file,
-            Err(e) => return Err(SomethingWrong(e.to_string())),
+            Ok(file) => {
+                info!("detected direction: {} {:?}", direction_path, direction);
+                file
+            }
+            Err(e) => {
+                return {
+                    error!("detect direction error: {}", e);
+                    Err(SomethingWrong(e.to_string()))
+                }
+            }
         };
         config.file = Some(file);
+
+        info!("gpio prepared");
 
         Ok(Self::new_with(config))
     }

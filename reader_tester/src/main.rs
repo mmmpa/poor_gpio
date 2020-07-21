@@ -9,11 +9,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn test() {
-    let reader = GpioReaderClient::open(21).await;
+    pretty_env_logger::init();
 
-    println!("{:?}", reader);
+    let reader = GpioReaderClient::open(Config {
+        gpio_n: 21,
+        ..Default::default()
+    })
+    .await;
 
-    let reader = reader.unwrap();
+    let mut reader = reader.unwrap();
 
     let mut value = 0;
 
