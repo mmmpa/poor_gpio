@@ -50,7 +50,7 @@ impl Gpio for GpioReaderClient {
 
 impl GpioReaderOpener for GpioReaderClient {}
 impl GpioReader for GpioReaderClient {}
-impl GpioReaderIntoListener for GpioReaderClient {}
+impl IntoGpioReaderReceiver for GpioReaderClient {}
 
 impl Drop for GpioReaderClient {
     fn drop(&mut self) {

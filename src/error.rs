@@ -1,11 +1,9 @@
 use std::process::Output;
 use tokio::io::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum GpioError {
     SomethingWrong(String),
-    PreparationError(RunCommandError),
-    RunCommandError(RunCommandError),
 }
 
 #[derive(Debug)]

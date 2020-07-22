@@ -43,9 +43,9 @@ impl GpioReader for GpioReaderTestClient {
     }
 }
 
-impl GpioReaderIntoListener for GpioReaderTestClient {}
+impl IntoGpioReaderReceiver for GpioReaderTestClient {}
 
-pub async fn create_test_reader(gpio_n: usize) -> impl GpioReader + GpioReaderIntoListener {
+pub async fn create_test_reader(gpio_n: usize) -> impl GpioReader + IntoGpioReaderReceiver {
     GpioReaderTestClient::open(Config {
         gpio_n,
         ..Default::default()
