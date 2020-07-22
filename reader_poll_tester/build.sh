@@ -1,3 +1,3 @@
 #!/bin/sh
 
-CROSS_COMPILE=arm-linux-musleabihf-gcc cargo build --release --target arm-unknown-linux-musleabihf
+CROSS_COMPILE=arm-linux-gnueabihf- cargo build --release --target arm-unknown-linux-gnueabihf
