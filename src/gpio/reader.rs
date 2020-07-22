@@ -1,8 +1,7 @@
 use crate::*;
 use async_trait::async_trait;
-use tokio::prelude::*;
+use nix::sys::epoll::*;
 use tokio::sync::mpsc::Receiver;
-use tokio::time::Duration;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum GpioReaderEvent {
@@ -11,14 +10,12 @@ pub enum GpioReaderEvent {
 
 #[async_trait]
 pub trait GpioReader: Gpio {
-    async fn read(&mut self) -> GpioResult<usize> {
+    async fn read(&self) -> GpioResult<usize> {
         let o = match tokio::fs::read(self.value_path()).await {
             Ok(o) => o,
-            Err(e) => return Ok(0),
+            Err(_) => return Ok(0),
         };
         let out = String::from_utf8(o)?;
-
-        info!("{}", out);
 
         match chomp(&out).parse() {
             Ok(n) => Ok(n),
@@ -26,24 +23,31 @@ pub trait GpioReader: Gpio {
         }
     }
 }
+use std::os::unix::io::AsRawFd;
 #[async_trait]
 pub trait GpioReaderIntoListener: GpioReader {
     async fn into_listener(self) -> GpioResult<Receiver<GpioReaderEvent>> {
-        self.into_listener_with_interval(10).await
-    }
-
-    async fn into_listener_with_interval(
-        mut self,
-        msec: u64,
-    ) -> GpioResult<Receiver<GpioReaderEvent>> {
-        let interval = Duration::from_millis(msec);
         let pre = self.read().await?;
         let (mut sender, receiver) = tokio::sync::mpsc::channel(100);
 
         tokio::spawn(async move {
+            let value = tokio::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(self.value_path())
+                .await
+                .unwrap();
+            let value_fd = value.as_raw_fd();
+            let epoll_fd = epoll_create().unwrap();
+            let mut event =
+                EpollEvent::new(EpollFlags::EPOLLPRI | EpollFlags::EPOLLET, value_fd as u64);
+            epoll_ctl(epoll_fd, EpollOp::EpollCtlAdd, value_fd, &mut event).unwrap();
+
             let mut pre = pre;
+            let mut epoll_events = vec![EpollEvent::empty(); 1];
+
             loop {
-                tokio::time::delay_for(interval).await;
+                epoll_wait(epoll_fd, &mut epoll_events, -1).unwrap();
 
                 let next = self.read().await.unwrap();
                 if pre != next {

@@ -1,7 +1,5 @@
 use crate::*;
 use async_trait::async_trait;
-use tokio::fs::File;
-use tokio::io::Error;
 
 #[derive(Debug)]
 pub enum GpioDirection {
@@ -13,7 +11,6 @@ pub enum GpioDirection {
 pub trait Gpio: Sized + Sync + Send + 'static {
     fn new_with(config: Config) -> Self;
     fn config(&self) -> &Config;
-    fn config_mut(&mut self) -> &mut Config;
     fn n(&self) -> &str {
         self.config().gpio_n_str.as_ref().unwrap()
     }
@@ -43,7 +40,7 @@ pub trait Gpio: Sized + Sync + Send + 'static {
         // TODO: verify direction
         let direction_path = format!("/sys/class/gpio/gpio{}/direction", config.gpio_n);
         let mut open_option = tokio::fs::OpenOptions::new();
-        let file = match direction {
+        match direction {
             GpioDirection::In => {
                 tokio::fs::write(&direction_path, "in").await.unwrap();
                 open_option.read(true)
@@ -54,21 +51,15 @@ pub trait Gpio: Sized + Sync + Send + 'static {
             }
         }
         .open(config.value_path.as_ref().unwrap())
-        .await;
+        .await
+        .unwrap();
 
-        let file = match file {
-            Ok(file) => {
-                info!("detected direction: {} {:?}", direction_path, direction);
-                file
-            }
-            Err(e) => {
-                return {
-                    error!("detect direction error: {}", e);
-                    Err(SomethingWrong(e.to_string()))
-                }
-            }
-        };
-        config.file = Some(file);
+        tokio::fs::write(
+            format!("/sys/class/gpio/gpio{}/edge", config.gpio_n),
+            "both",
+        )
+        .await
+        .unwrap();
 
         info!("gpio prepared");
 

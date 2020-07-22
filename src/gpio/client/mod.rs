@@ -14,10 +14,6 @@ impl Gpio for GpioWriterClient {
     fn config(&self) -> &Config {
         &self.config
     }
-
-    fn config_mut(&mut self) -> &mut Config {
-        &mut self.config
-    }
 }
 
 impl GpioWriterOpener for GpioWriterClient {}
@@ -49,10 +45,6 @@ impl Gpio for GpioReaderClient {
 
     fn config(&self) -> &Config {
         &self.config
-    }
-
-    fn config_mut(&mut self) -> &mut Config {
-        &mut self.config
     }
 }
 

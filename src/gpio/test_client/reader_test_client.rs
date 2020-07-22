@@ -1,7 +1,7 @@
 use crate::*;
 use async_trait::async_trait;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GpioReaderTestClient {
     config: Config,
 }
@@ -13,10 +13,6 @@ impl Gpio for GpioReaderTestClient {
 
     fn config(&self) -> &Config {
         &self.config
-    }
-
-    fn config_mut(&mut self) -> &mut Config {
-        &mut self.config
     }
 }
 
@@ -34,7 +30,7 @@ impl GpioReaderOpener for GpioReaderTestClient {
 
 #[async_trait]
 impl GpioReader for GpioReaderTestClient {
-    async fn read(&mut self) -> GpioResult<usize> {
+    async fn read(&self) -> GpioResult<usize> {
         let out = match std::fs::read_to_string(format!("./tmp/{}", self.config().gpio_n)) {
             Ok(n) => n,
             Err(_) => return Ok(0),
@@ -65,42 +61,14 @@ pub fn test_write_value(gpio_n: usize, value: usize) {
 #[cfg(test)]
 mod tests {
     use crate::*;
-    use tokio::time::Duration;
 
     #[tokio::test]
     async fn test() {
-        let mut cli = create_test_reader(42).await;
+        let cli = create_test_reader(42).await;
 
         assert_eq!(0, cli.read().await.unwrap());
 
         test_write_value(42, 1);
         assert_eq!(1, cli.read().await.unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_listener() {
-        let mut cli = create_test_reader(44).await.into_listener().await.unwrap();
-
-        let r = tokio::spawn(async move {
-            let v = cli.recv().await.unwrap();
-            assert_eq!(GpioReaderEvent::FromTo((0, 1)), v);
-            let v = cli.recv().await.unwrap();
-            assert_eq!(GpioReaderEvent::FromTo((1, 0)), v);
-            let v = cli.recv().await.unwrap();
-            assert_eq!(GpioReaderEvent::FromTo((0, 1)), v);
-            true
-        });
-
-        tokio::spawn(async {
-            tokio::time::delay_for(Duration::from_millis(20)).await;
-            test_write_value(44, 1);
-            tokio::time::delay_for(Duration::from_millis(20)).await;
-            test_write_value(44, 0);
-            tokio::time::delay_for(Duration::from_millis(20)).await;
-            test_write_value(44, 1);
-        });
-
-        let ended = r.await.unwrap();
-        assert!(ended);
     }
 }
