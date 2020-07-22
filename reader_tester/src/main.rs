@@ -17,7 +17,7 @@ async fn test() {
     })
     .await;
 
-    let mut reader = reader.unwrap();
+    let reader = reader.unwrap();
 
     let mut value = 0;
 

@@ -1,8 +1,4 @@
-#[macro_use]
-extern crate log;
-
 use poor_gpio::*;
-use tokio::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -21,7 +17,7 @@ async fn test() {
     })
     .await;
 
-    let mut reader = reader.unwrap().into_listener().await.unwrap();
+    let mut reader = reader.unwrap().into_receiver().await.unwrap();
 
     let mut count = 0u32;
 

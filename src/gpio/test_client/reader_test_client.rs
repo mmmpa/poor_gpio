@@ -3,15 +3,15 @@ use async_trait::async_trait;
 
 #[derive(Debug, Clone)]
 pub struct GpioReaderTestClient {
-    config: Config,
+    config: NormalizedConfig,
 }
 
 impl Gpio for GpioReaderTestClient {
-    fn new_with(config: Config) -> Self {
+    fn new_with(config: NormalizedConfig) -> Self {
         Self { config }
     }
 
-    fn config(&self) -> &Config {
+    fn config(&self) -> &NormalizedConfig {
         &self.config
     }
 }
@@ -24,7 +24,7 @@ impl GpioReaderOpener for GpioReaderTestClient {
     {
         std::fs::create_dir_all("./tmp").unwrap();
         let _ = std::fs::remove_file(format!("./tmp/{}", config.gpio_n));
-        Ok(Self::new_with(config))
+        Ok(Self::new_with(config.into()))
     }
 }
 

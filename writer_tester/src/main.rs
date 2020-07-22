@@ -9,8 +9,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn test() {
-    let gp_green = GpioWriterClient::open(2).await;
-    let gp_red = GpioWriterClient::open(3).await;
+    let gp_green = GpioWriterClient::open(Config {
+        gpio_n: 2,
+        ..Default::default()
+    })
+    .await;
+    let gp_red = GpioWriterClient::open(Config {
+        gpio_n: 3,
+        ..Default::default()
+    })
+    .await;
 
     println!("{:?} {:?}", gp_green, gp_red);
 

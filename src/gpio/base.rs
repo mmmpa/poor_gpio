@@ -9,66 +9,61 @@ pub enum GpioDirection {
 
 #[async_trait]
 pub trait Gpio: Sized + Sync + Send + 'static {
-    fn new_with(config: Config) -> Self;
-    fn config(&self) -> &Config;
+    fn new_with(config: NormalizedConfig) -> Self;
+    fn config(&self) -> &NormalizedConfig;
     fn n(&self) -> &str {
-        self.config().gpio_n_str.as_ref().unwrap()
+        &self.config().gpio_n_str
+    }
+    fn value_path(&self) -> &str {
+        &self.config().value_path
     }
 
-    async fn prepare(mut config: Config, direction: GpioDirection) -> GpioResult<Self>
+    async fn prepare(config: Config, direction: GpioDirection) -> GpioResult<Self>
     where
         Self: Sized,
     {
         use GpioError::*;
-        info!("gpio start preparation");
+        debug!("start preparation: {}", config.gpio_n);
 
-        config.gpio_n_str = Some(config.gpio_n.to_string());
-        config.value_path = Some(format!("/sys/class/gpio/gpio{}/value", config.gpio_n));
+        let gpio_n_str = config.gpio_n.to_string();
+        let value_path = format!("/sys/class/gpio/gpio{}/value", config.gpio_n);
 
-        if config.open {
-            match tokio::fs::write("/sys/class/gpio/export", config.gpio_n.to_string()).await {
-                Ok(_) => info!("opened {}", config.gpio_n),
-                Err(e) => {
-                    error!("open error");
-                    if config.err_if_already_opened {
-                        return Err(SomethingWrong(e.to_string()));
-                    }
+        let opened = if config.open {
+            match tokio::fs::write("/sys/class/gpio/export", &gpio_n_str).await {
+                Err(e) if config.err_if_already_opened => {
+                    debug!("already opened: {}", config.gpio_n);
+                    return Err(SomethingWrong(e.to_string()));
                 }
+                Ok(_) => true,
+                _ => false,
             }
-        }
+        } else {
+            false
+        };
 
-        // TODO: verify direction
         let direction_path = format!("/sys/class/gpio/gpio{}/direction", config.gpio_n);
-        let mut open_option = tokio::fs::OpenOptions::new();
-        match direction {
-            GpioDirection::In => {
-                tokio::fs::write(&direction_path, "in").await.unwrap();
-                open_option.read(true)
-            }
-            GpioDirection::Out => {
-                tokio::fs::write(&direction_path, "out").await.unwrap();
-                open_option.read(true).write(true)
-            }
-        }
-        .open(config.value_path.as_ref().unwrap())
-        .await
-        .unwrap();
 
-        tokio::fs::write(
-            format!("/sys/class/gpio/gpio{}/edge", config.gpio_n),
-            "both",
-        )
-        .await
-        .unwrap();
+        match match direction {
+            GpioDirection::In => tokio::fs::write(&direction_path, "in").await,
+            GpioDirection::Out => tokio::fs::write(&direction_path, "out").await,
+        } {
+            Err(_) => return Err(DirectionNotMatch),
+            _ => {}
+        };
 
-        info!("gpio prepared");
+        tokio::fs::write(format!("/sys/class/gpio/gpio{}/edge", &gpio_n_str), "both")
+            .await
+            .unwrap();
 
-        Ok(Self::new_with(config))
+        debug!("prepared: {}", gpio_n_str);
+
+        Ok(Self::new_with(NormalizedConfig {
+            close: opened && config.close_if_open_self,
+            gpio_n: 0,
+            gpio_n_str,
+            value_path,
+        }))
     }
 
     fn close(self) {}
-
-    fn value_path(&self) -> &str {
-        self.config().value_path.as_ref().unwrap()
-    }
 }

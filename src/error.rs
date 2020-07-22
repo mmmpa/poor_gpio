@@ -4,6 +4,7 @@ use tokio::io::Error;
 #[derive(Debug, Eq, PartialEq)]
 pub enum GpioError {
     SomethingWrong(String),
+    DirectionNotMatch,
 }
 
 #[derive(Debug)]

@@ -1,17 +1,16 @@
 use crate::*;
-use std::process::Command;
 
 #[derive(Debug, Clone)]
 pub struct GpioWriterClient {
-    config: Config,
+    config: NormalizedConfig,
 }
 
 impl Gpio for GpioWriterClient {
-    fn new_with(config: Config) -> Self {
+    fn new_with(config: NormalizedConfig) -> Self {
         Self { config }
     }
 
-    fn config(&self) -> &Config {
+    fn config(&self) -> &NormalizedConfig {
         &self.config
     }
 }
@@ -22,28 +21,28 @@ impl GpioReader for GpioWriterClient {}
 
 impl Drop for GpioWriterClient {
     fn drop(&mut self) {
-        // must sync
-        let _ = Command::new("sh")
-            .arg("-c")
-            .arg(format!(
-                "echo {} > /sys/class/gpio/unexport",
-                self.config.gpio_n
-            ))
-            .output();
+        if !self.config.close {
+            return;
+        }
+
+        match std::fs::write("/sys/class/gpio/unexport", self.n()) {
+            Ok(_) => debug!("closed: {}", self.n()),
+            Err(_) => debug!("failed to close: {}", self.n()),
+        };
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct GpioReaderClient {
-    config: Config,
+    config: NormalizedConfig,
 }
 
 impl Gpio for GpioReaderClient {
-    fn new_with(config: Config) -> Self {
+    fn new_with(config: NormalizedConfig) -> Self {
         Self { config }
     }
 
-    fn config(&self) -> &Config {
+    fn config(&self) -> &NormalizedConfig {
         &self.config
     }
 }
@@ -54,13 +53,13 @@ impl IntoGpioReaderReceiver for GpioReaderClient {}
 
 impl Drop for GpioReaderClient {
     fn drop(&mut self) {
-        // must sync
-        let _ = Command::new("sh")
-            .arg("-c")
-            .arg(format!(
-                "echo {} > /sys/class/gpio/unexport",
-                self.config.gpio_n
-            ))
-            .output();
+        if !self.config.close {
+            return;
+        }
+
+        match std::fs::write("/sys/class/gpio/unexport", self.n()) {
+            Ok(_) => debug!("closed: {}", self.n()),
+            Err(_) => debug!("failed to close: {}", self.n()),
+        };
     }
 }
